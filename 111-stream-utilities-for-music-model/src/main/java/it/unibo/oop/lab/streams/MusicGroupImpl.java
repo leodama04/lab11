@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.Set;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -31,42 +33,50 @@ public final class MusicGroupImpl implements MusicGroup {
 
     @Override
     public Stream<String> orderedSongNames() {
-        return null;
+        return this.songs.stream().map(t -> t.getSongName()).sorted();
     }
 
     @Override
     public Stream<String> albumNames() {
-        return null;
+        return this.albums.entrySet().stream().map(t -> t.getKey());
     }
 
     @Override
     public Stream<String> albumInYear(final int year) {
-        return null;
+        return this.albums.entrySet().stream().filter(t -> t.getValue().equals(year)).map(t -> t.getKey());
     }
 
     @Override
     public int countSongs(final String albumName) {
-        return -1;
+        return (int)this.songs.stream().filter(t -> t.getAlbumName().equals(Optional.of(albumName))).count();
     }
 
     @Override
     public int countSongsInNoAlbum() {
-        return -1;
+        return (int)this.songs.stream().filter(t -> t.getAlbumName().isEmpty()).count();
     }
 
     @Override
     public OptionalDouble averageDurationOfSongs(final String albumName) {
-        return null;
+        return this.songs.stream()
+            .filter(t -> t.getAlbumName().equals(Optional.of(albumName)))
+            .mapToDouble(MusicGroupImpl.Song::getDuration)
+            .average();
     }
 
     @Override
     public Optional<String> longestSong() {
-        return null;
+        return this.songs.stream().max((a, b) -> (int)(a.getDuration() - b.getDuration())).map(t-> t.getSongName());
     }
 
     @Override
     public Optional<String> longestAlbum() {
-        return null;
+        return this.songs.stream()
+            .collect(Collectors.groupingBy(t -> t.getAlbumName(), Collectors.toSet()))
+            .entrySet()
+            .stream()
+            .max((a, b) -> (int)(a.getValue().stream().mapToDouble(t -> t.getDuration()).sum() - b.getValue().stream().mapToDouble(t -> t.getDuration()).sum()))
+            .get().getKey();
     }
 
     private static final class Song {
